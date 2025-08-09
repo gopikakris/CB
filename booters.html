@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Booster</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      canvas {
+        border-radius: 9999px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+      .spin-container {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+      }
+      .pointer {
+          width: 0;
+          height: 0;
+          border-left: 10px solid transparent;
+          border-right: 10px solid transparent;
+          border-top: 20px solid #ef4444; /* red color for pointer */
+          position: absolute;
+          top: -10px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 10;
+      }
+      .pointer::after {
+        content: '';
+        position: absolute;
+        top: -24px;
+        left: -10px;
+        width: 20px;
+        height: 20px;
+        background: #ef4444;
+        border-radius: 50%;
+      }
+    </style>
+    <!-- Load the Lucide icons for a clean look -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col items-center p-4">
+
+    <header class="bg-blue-600 text-white p-6 w-full max-w-5xl rounded-xl shadow-lg text-center mb-6">
+        <h1 class="text-3xl font-bold tracking-wide">Company Booster dashboard </h1>
+    </header>
+
+    <main class="w-full max-w-5xl flex flex-col gap-6">
+
+        <!-- Section to load a specific employee's profile -->
+        <section class="bg-white rounded-xl p-6 shadow-md text-center">
+            <h2 class="text-2xl font-semibold text-blue-600 border-b-2 border-green-400 pb-2 mb-4">Load or Create Profile</h2>
+            <div class="flex flex-wrap justify-center items-center gap-4 mt-4">
+                <input type="text" id="employee-name-input" placeholder="Enter your name" class="p-3 border border-slate-300 rounded-lg w-full md:w-60 text-lg focus:outline-none focus:border-blue-500">
+                <input type="text" id="employee-id-input" placeholder="Enter your ID" class="p-3 border border-slate-300 rounded-lg w-full md:w-60 text-lg focus:outline-none focus:border-blue-500">
+                <input type="text" id="company-name-input" placeholder="Enter company name" class="p-3 border border-slate-300 rounded-lg w-full md:w-60 text-lg focus:outline-none focus:border-blue-500">
+                <button id="load-profile-btn" class="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg text-lg hover:bg-blue-700 transition duration-200">Load Profile</button>
+            </div>
+            <p id="employee-profile-name" class="text-xl font-medium mt-4 text-blue-600 h-6"></p>
+        </section>
+        
+        <!-- The section for adding tasks has been removed -->
+
+        <div class="flex flex-col md:flex-row gap-6">
+            <div class="md:w-1/2 flex flex-col gap-6">
+                <!-- User Info and Summary -->
+                <div class="bg-white rounded-xl p-6 shadow-md flex justify-around items-center">
+                    <div class="text-xl font-medium text-blue-600 flex items-center gap-2">
+                        <i class="lucide lucide-star text-yellow-400" data-lucide="star"></i>
+                        <span id="current-points" class="font-bold">0</span> Points
+                    </div>
+                    <div class="text-xl font-medium text-blue-600 flex items-center gap-2">
+                        <i class="lucide lucide-check-circle text-green-500" data-lucide="check-circle"></i>
+                        Tasks Completed Today: <span id="tasks-completed" class="font-bold">0</span>
+                    </div>
+                </div>
+            
+                <!-- Daily Tasks Section -->
+                <section class="bg-white rounded-xl p-6 shadow-md flex-grow">
+                    <h2 class="text-2xl font-semibold text-blue-600 border-b-2 border-green-400 pb-2 mb-4">Your Daily Tasks</h2>
+                    <ul id="task-list" class="space-y-3">
+                        <p class="text-slate-500">Please load or create a profile to see tasks.</p>
+                    </ul>
+                </section>
+            </div>
+            
+            <!-- Leaderboard Section -->
+            <section class="bg-white rounded-xl p-6 shadow-md md:w-1/2 flex flex-col">
+                <h2 class="text-2xl font-semibold text-blue-600 border-b-2 border-green-400 pb-2 mb-4">Leaderboard</h2>
+                <ol id="leaderboard-list" class="space-y-3">
+                    <p class="text-slate-500">No employees to display yet.</p>
+                </ol>
+            </section>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Bonus Spin Section -->
+            <section class="bg-white rounded-xl p-6 shadow-md text-center">
+                <h2 class="text-2xl font-semibold text-blue-600 border-b-2 border-green-400 pb-2 mb-4">Bonus Spin!</h2>
+                <div class="flex flex-col items-center gap-4 mt-4">
+                    <div class="spin-container w-full max-w-sm mx-auto">
+                        <div class="pointer"></div>
+                        <canvas id="wheel-canvas" width="300" height="300" class="mb-4"></canvas>
+                        <button id="spin-wheel-btn" class="bg-green-500 text-white font-semibold py-3 px-8 rounded-full text-lg hover:bg-green-600 transition duration-200 shadow-md">Spin!</button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Daily Boost Section -->
+            <section class="bg-white rounded-xl p-6 shadow-md text-center">
+                <h2 class="text-2xl font-semibold text-blue-600 border-b-2 border-green-400 pb-2 mb-4">Get a Daily Boost!</h2>
+                <div class="flex flex-col items-center gap-4 mt-4">
+                    <button id="get-quote-btn" class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-full text-lg hover:bg-blue-700 transition duration-200 shadow-md">Get a Motivational Quote!</button>
+                    <p id="quote-message" class="text-lg font-medium text-slate-600 h-6"></p>
+                </div>
+            </section>
+        </div>
+        
+        <!-- Rewards Section -->
+        <section class="bg-white rounded-xl p-6 shadow-md mt-6">
+            <h2 class="text-2xl font-semibold text-blue-600 border-b-2 border-green-400 pb-2 mb-4">Top 3 Rewards</h2>
+            <div id="rewards-container" class="flex flex-col md:flex-row gap-6 justify-center text-center">
+                <p class="text-slate-500">Create some employees and tasks to see rewards!</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal for alerts -->
+    <div id="modal" class="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-xl shadow-lg w-80 text-center">
+            <p id="modal-message" class="text-lg mb-4"></p>
+            <button id="modal-close-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">OK</button>
+        </div>
+    </div>
+
+    <!--
+    This is the JavaScript file that handles all the dynamic client-side logic.
+    It has been updated to include a spin limit and uses pre-defined tasks.
+    -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Mock Data ---
+        let employees = {};
+        // The tasks are now pre-defined and hardcoded in a task pool
+        const taskPool = [
+            { id: 1, name: "Complete weekly report", points_value: 100, status: "pending" },
+            { id: 2, name: "Organize project files", points_value: 75, status: "pending" },
+            { id: 3, name: "Review Q1 performance metrics", points_value: 120, status: "pending" },
+            { id: 4, name: "Lead morning stand-up meeting", points_value: 50, status: "pending" },
+            { id: 5, name: "Research new market trends", points_value: 150, status: "pending" },
+            { id: 6, name: "Conduct peer code review", points_value: 60, status: "pending" }
+        ];
+
+        // --- State Variables ---
+        let currentEmployeeName = null;
+        let modalTimeout = null;
+        
+        // Define the rewards for each rank
+        const rewards = {
+            1: "Extra Paid Day Off",
+            2: "Custom Trophy & Gift Card",
+            3: "Team Lunch with the Manager"
+        };
+        
+        // List of motivational quotes
+        const motivationalQuotes = [
+            "The secret of getting ahead is getting started.",
+            "The only way to do great work is to love what you do.",
+            "Don't watch the clock; do what it does. Keep going.",
+            "The future depends on what you do today.",
+            "Believe you can and you're halfway there.",
+            "The best way to predict the future is to create it.",
+            "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work.",
+            "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+            "Hard work beats talent when talent doesn't work hard.",
+            "The only thing that will stop you from fulfilling your dreams is you."
+        ];
+        
+        // Quotes for "Try Again"
+        const tryAgainQuotes = [
+            "Don't give up. The beginning is always the hardest.",
+            "Fall seven times, stand up eight.",
+            "Failure is the opportunity to begin again more intelligently.",
+            "The greatest glory in living lies not in never falling, but in rising every time we fall.",
+            "Our greatest weakness lies in giving up. The most certain way to succeed is always to try just one more time."
+        ];
+        
+        // Winning quotes for the spin wheel
+        const winningQuotes = [
+            "Well done, champion! You've earned this!",
+            "Fantastic work! Keep up the momentum!",
+            "An amazing reward for an amazing employee!",
+            "Your hard work has paid off!",
+            "Victory is yours! Keep soaring high!"
+        ];
+
+        // Spin Wheel Configuration
+        const wheelOutcomes = [
+            { text: "+5 pts", points: 5, color: "#a5b4fc", weight: 6 },
+            { text: "Try Again", points: 0, color: "#fca5a5", weight: 10 },
+            { text: "+10 pts", points: 10, color: "#86efac", weight: 3 },
+            { text: "+25 pts", points: 25, color: "#a2e6a2", weight: 2 },
+            { text: "+50 pts", points: 50, color: "#4c9b4c", weight: 1.5 },
+            { text: "JACKPOT! +100 pts!", points: 100, color: "#fde047", weight: 1 },
+            { text: "BUMPER PRIZE! +1000 pts!", points: 1000, color: "#f97316", weight: 2 }
+        ];
+
+        // DOM elements
+        const employeeNameInput = document.getElementById('employee-name-input');
+        const employeeIdInput = document.getElementById('employee-id-input');
+        const companyNameInput = document.getElementById('company-name-input');
+        const loadProfileBtn = document.getElementById('load-profile-btn');
+        const employeeProfileName = document.getElementById('employee-profile-name');
+        const taskList = document.getElementById('task-list');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const currentPointsEl = document.getElementById('current-points');
+        const tasksCompletedEl = document.getElementById('tasks-completed');
+        const rewardsContainer = document.getElementById('rewards-container');
+        const spinWheelBtn = document.getElementById('spin-wheel-btn');
+        const getQuoteBtn = document.getElementById('get-quote-btn');
+        const wheelCanvas = document.getElementById('wheel-canvas');
+        const ctx = wheelCanvas.getContext('2d');
+        
+        // Modal elements
+        const modal = document.getElementById('modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // Spin wheel state variables
+        let isSpinning = false;
+        let startAngle = 0;
+        let spinTimeout = null;
+
+        /**
+         * Custom alert function using a modal.
+         * @param {string} message The message to display.
+         * @param {number} [duration] The duration in milliseconds to display the modal.
+         */
+        function showAlert(message, duration = null) {
+            modalMessage.textContent = message;
+            modal.classList.remove('hidden');
+
+            if (modalTimeout) {
+                clearTimeout(modalTimeout);
+            }
+
+            if (duration) {
+                modalTimeout = setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, duration);
+            }
+        }
+
+        modalCloseBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            if (modalTimeout) {
+                clearTimeout(modalTimeout);
+            }
+        });
+
+        // --- UI Rendering Functions ---
+
+        /**
+         * Renders daily tasks for the current user from the pre-defined list.
+         */
+        function renderTasks() {
+            if (!currentEmployeeName) {
+                taskList.innerHTML = '<p class="text-slate-500">Please load or create a profile to see tasks.</p>';
+                return;
+            }
+            
+            // Get the tasks assigned to the current employee
+            let employeeTasks = employees[currentEmployeeName].tasks;
+            taskList.innerHTML = '';
+            
+            let completedCount = 0;
+            if (employeeTasks.length > 0) {
+                // Sort tasks to show pending tasks first
+                employeeTasks.sort((a, b) => {
+                    if (a.status === 'completed' && b.status !== 'completed') {
+                        return 1;
+                    }
+                    if (a.status !== 'completed' && b.status === 'completed') {
+                        return -1;
+                    }
+                    return 0;
+                });
+
+                employeeTasks.forEach(task => {
+                    const li = document.createElement('li');
+                    const isCompleted = task.status === 'completed';
+                    
+                    li.classList.add('flex', 'items-center', 'justify-between', 'p-4', 'border-b', 'border-slate-200', 'last:border-b-0', 'transition-colors', 'duration-200');
+                    if (isCompleted) {
+                        li.classList.add('line-through', 'text-slate-500');
+                    }
+                    
+                    const taskNameSpan = document.createElement('span');
+                    taskNameSpan.classList.add('flex-grow', 'text-lg');
+                    taskNameSpan.textContent = `${task.name} (${task.points_value} pts)`;
+                    
+                    const completeButton = document.createElement('button');
+                    completeButton.classList.add('font-semibold', 'py-2', 'px-4', 'rounded-lg', 'transition', 'duration-200');
+                    completeButton.textContent = isCompleted ? 'Completed' : 'Complete';
+                    completeButton.disabled = isCompleted;
+                    
+                    if (isCompleted) {
+                        completeButton.classList.add('bg-slate-400', 'text-white', 'cursor-not-allowed');
+                    } else {
+                        completeButton.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                        // Correctly attach the event listener to call the completeTask function with the task ID
+                        completeButton.addEventListener('click', () => {
+                            completeTask(task.id);
+                        });
+                    }
+                    
+                    li.appendChild(taskNameSpan);
+                    li.appendChild(completeButton);
+                    
+                    if (isCompleted) {
+                        completedCount++;
+                    }
+                    taskList.appendChild(li);
+                });
+            } else {
+                taskList.innerHTML = `<p class="text-slate-500">No tasks assigned for ${currentEmployeeName} yet.</p>`;
+            }
+
+            tasksCompletedEl.textContent = completedCount;
+        }
+        
+        /**
+         * Marks a task as completed and updates local data.
+         * @param {number} taskId The ID of the task to complete.
+         */
+        function completeTask(taskId) {
+            const employeeTasks = employees[currentEmployeeName].tasks;
+            const taskToUpdate = employeeTasks.find(task => task.id === taskId);
+            
+            if (taskToUpdate && taskToUpdate.status === 'pending') {
+                taskToUpdate.status = 'completed';
+                
+                const pointsAwarded = taskToUpdate.points_value;
+                employees[currentEmployeeName]['points'] += pointsAwarded;
+                
+                // We're not tracking 'tasks_completed' for this version, but we'll update the display
+                // based on the number of 'completed' tasks in the array.
+                
+                // Re-render the UI to reflect the changes
+                renderTasks();
+                renderLeaderboard();
+                renderUserPoints();
+            }
+        }
+
+        /**
+         * Renders the leaderboard data to the UI.
+         */
+        function renderLeaderboard() {
+            const leaderboardData = Object.keys(employees).map(name => ({
+                name,
+                points: employees[name].points
+            })).sort((a, b) => b.points - a.points);
+            
+            leaderboardList.innerHTML = '';
+            if (leaderboardData.length > 0) {
+                leaderboardData.forEach((person, index) => {
+                    const li = document.createElement('li');
+                    li.classList.add('flex', 'justify-between', 'items-center', 'p-4', 'border-b', 'border-slate-200', 'last:border-b-0');
+                    li.innerHTML = `
+                        <span class="text-lg text-slate-600 font-semibold">#${index + 1}</span>
+                        <span class="text-lg font-medium text-slate-800">${person.name}</span>
+                        <span class="bg-green-400 text-slate-800 font-bold px-3 py-1 rounded-full">${person.points} pts</span>
+                    `;
+                    leaderboardList.appendChild(li);
+                });
+            } else {
+                leaderboardList.innerHTML = '<p class="text-slate-500">No employees to display yet.</p>';
+            }
+            renderRewards(leaderboardData);
+        }
+
+        /**
+         * Renders the rewards for the top 3 employees.
+         * @param {Array} leaderboardData The sorted leaderboard data.
+         */
+        function renderRewards(leaderboardData) {
+            rewardsContainer.innerHTML = '';
+
+            if (!leaderboardData || leaderboardData.length === 0) {
+                rewardsContainer.innerHTML = '<p class="text-slate-500">Create some employees and tasks to see rewards!</p>';
+                return;
+            }
+
+            try {
+                for (let i = 0; i < Math.min(leaderboardData.length, 3); i++) {
+                    const employee = leaderboardData[i];
+                    const rank = i + 1;
+                    const rewardText = rewards[rank];
+
+                    const rewardCard = document.createElement('div');
+                    rewardCard.classList.add('bg-white', 'p-4', 'rounded-xl', 'shadow-md', 'flex-1');
+                    rewardCard.innerHTML = `
+                        <h3 class="text-xl font-bold mb-2 text-blue-600">Rank #${rank}</h3>
+                        <p class="text-lg text-slate-700 font-medium">${employee.name}</p>
+                        <p class="text-green-500 font-semibold mt-1">${rewardText}</p>
+                    `;
+                    rewardsContainer.appendChild(rewardCard);
+                }
+            } catch (error) {
+                console.error("Error rendering rewards:", error);
+                rewardsContainer.innerHTML = '<p class="text-red-500">An error occurred while displaying rewards.</p>';
+            }
+        }
+
+
+        /**
+         * Renders the current user's points to the display.
+         */
+        function renderUserPoints() {
+            if (currentEmployeeName && employees[currentEmployeeName]) {
+                currentPointsEl.textContent = employees[currentEmployeeName].points;
+                const completedTasks = employees[currentEmployeeName].tasks.filter(t => t.status === 'completed').length;
+                tasksCompletedEl.textContent = completedTasks;
+            } else {
+                currentPointsEl.textContent = 0;
+                tasksCompletedEl.textContent = 0;
+            }
+        }
+        
+        /**
+         * Sends a motivational quote to the current user.
+         */
+        function sendMotivationalQuote() {
+            if (!currentEmployeeName) {
+                showAlert('Please load a profile before you can get a daily boost.');
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * motivationalQuotes.length);
+            const quote = motivationalQuotes[randomIndex];
+
+            showAlert(quote);
+        }
+
+        // --- Spin Wheel Functions ---
+
+        /**
+         * Draws the spinning wheel on the canvas.
+         */
+        function drawWheel() {
+            ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+            let totalWeight = wheelOutcomes.reduce((sum, outcome) => sum + outcome.weight, 0);
+            let currentAngle = startAngle;
+            let centerX = wheelCanvas.width / 2;
+            let centerY = wheelCanvas.height / 2;
+            let radius = Math.min(centerX, centerY) - 5;
+            
+            wheelOutcomes.forEach(outcome => {
+                let segmentAngle = (outcome.weight / totalWeight) * 2 * Math.PI;
+                ctx.beginPath();
+                ctx.fillStyle = outcome.color;
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + segmentAngle);
+                ctx.closePath();
+                ctx.fill();
+
+                // Draw text
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(currentAngle + segmentAngle / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "black";
+                ctx.font = "14px Inter, sans-serif";
+                ctx.fillText(outcome.text, radius - 10, 0);
+                ctx.restore();
+
+                currentAngle += segmentAngle;
+            });
+        }
+        
+        /**
+         * Animates the wheel spinning.
+         * @param {number} spinVelocity The velocity of the spin.
+         * @param {number} finalAngle The final stopping angle.
+         */
+        function animateWheel(spinVelocity, finalAngle) {
+            startAngle += spinVelocity;
+            if (spinVelocity > 0) {
+                spinVelocity *= 0.99; // Decelerate
+                spinTimeout = requestAnimationFrame(() => animateWheel(spinVelocity, finalAngle));
+            }
+
+            if (spinVelocity < 0.002) { // Stop the animation when it's slow enough
+                cancelAnimationFrame(spinTimeout);
+                startAngle = finalAngle;
+                isSpinning = false;
+                
+                // Determine the winner
+                let winningAngle = (startAngle % (2 * Math.PI));
+                if (winningAngle < 0) winningAngle += 2 * Math.PI; // Normalize angle
+                
+                let totalWeight = wheelOutcomes.reduce((sum, outcome) => sum + outcome.weight, 0);
+                let currentAngle = 0;
+                let winningOutcome = null;
+
+                for (let i = 0; i < wheelOutcomes.length; i++) {
+                    const segmentAngle = (wheelOutcomes[i].weight / totalWeight) * 2 * Math.PI;
+                    if (winningAngle >= currentAngle && winningAngle < currentAngle + segmentAngle) {
+                        winningOutcome = wheelOutcomes[i];
+                        break;
+                    }
+                    currentAngle += segmentAngle;
+                }
+                
+                const pointsAwarded = winningOutcome.points;
+                
+                if (pointsAwarded > 0) {
+                    employees[currentEmployeeName]['points'] += pointsAwarded;
+                    const winningQuote = winningQuotes[Math.floor(Math.random() * winningQuotes.length)];
+                    showAlert(`${winningOutcome.text}! ${winningQuote}`, 3000);
+                    confetti();
+                } else {
+                    const tryAgainQuote = tryAgainQuotes[Math.floor(Math.random() * tryAgainQuotes.length)];
+                    showAlert(`😔 Try Again. ${tryAgainQuote}`, 3000);
+                }
+                
+                renderUserPoints();
+                renderLeaderboard();
+            }
+
+            drawWheel();
+        }
+        
+        /**
+         * A simple particle system for confetti.
+         */
+        function confetti() {
+            const confettiCanvas = document.createElement('canvas');
+            document.body.appendChild(confettiCanvas);
+            confettiCanvas.style.position = 'fixed';
+            confettiCanvas.style.top = '0';
+            confettiCanvas.style.left = '0';
+            confettiCanvas.style.width = '100vw';
+            confettiCanvas.style.height = '100vh';
+            confettiCanvas.style.pointerEvents = 'none';
+            const c_ctx = confettiCanvas.getContext('2d');
+            let particles = [];
+            
+            function createParticle() {
+                const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4'];
+                return {
+                    x: Math.random() * confettiCanvas.width,
+                    y: -10,
+                    size: Math.random() * 5 + 2,
+                    speed: Math.random() * 3 + 2,
+                    angle: Math.random() * Math.PI * 2,
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                };
+            }
+
+            for (let i = 0; i < 100; i++) {
+                particles.push(createParticle());
+            }
+
+            function drawParticles() {
+                c_ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+                particles.forEach(p => {
+                    c_ctx.beginPath();
+                    c_ctx.fillStyle = p.color;
+                    c_ctx.fillRect(p.x, p.y, p.size, p.size);
+                    p.y += p.speed;
+                    p.x += Math.sin(p.angle) * 2;
+                });
+
+                particles = particles.filter(p => p.y < confettiCanvas.height);
+                if (particles.length > 0) {
+                    requestAnimationFrame(drawParticles);
+                } else {
+                    confettiCanvas.remove();
+                }
+            }
+            drawParticles();
+        }
+
+        /**
+         * Handles the click event for the "Spin the Wheel" button.
+         */
+        function spinWheel() {
+            if (!currentEmployeeName) {
+                showAlert('Please load a profile before you spin the wheel.');
+                return;
+            }
+            
+            if (employees[currentEmployeeName].hasSpun) {
+                showAlert('Your daily spin is over.');
+                return;
+            }
+
+            if (isSpinning) return;
+            isSpinning = true;
+            spinWheelBtn.disabled = true;
+
+            // Set the hasSpun flag to true after the first spin
+            employees[currentEmployeeName].hasSpun = true;
+            
+            // Calculate a random final angle
+            let totalWeight = wheelOutcomes.reduce((sum, outcome) => sum + outcome.weight, 0);
+            let randomWeight = Math.random() * totalWeight;
+            let currentWeight = 0;
+            let targetSegmentIndex = 0;
+
+            for (let i = 0; i < wheelOutcomes.length; i++) {
+                currentWeight += wheelOutcomes[i].weight;
+                if (randomWeight <= currentWeight) {
+                    targetSegmentIndex = i;
+                    break;
+                }
+            }
+            
+            let currentAngle = 0;
+            let targetAngleStart = 0;
+            for(let i = 0; i < targetSegmentIndex; i++) {
+                targetAngleStart += (wheelOutcomes[i].weight / totalWeight) * 2 * Math.PI;
+            }
+            const targetAngleEnd = targetAngleStart + (wheelOutcomes[targetSegmentIndex].weight / totalWeight) * 2 * Math.PI;
+
+            // Choose a random angle within the winning segment
+            const finalAngle = targetAngleStart + Math.random() * (targetAngleEnd - targetAngleStart);
+
+            const revolutions = 5 + Math.random() * 5;
+            const fullCircle = 2 * Math.PI;
+            const spinToAngle = finalAngle + (revolutions * fullCircle);
+            
+            animateWheel(0.5, spinToAngle);
+        }
+        
+        /**
+         * Handles the click event for the "Load Profile" button.
+         */
+        function loadProfile() {
+            const inputName = employeeNameInput.value.trim();
+            const inputId = employeeIdInput.value.trim();
+            const inputCompanyName = companyNameInput.value.trim();
+
+            if (!inputName || !inputId || !inputCompanyName) {
+                showAlert('Please enter a name, ID, and company name to load or create a profile.');
+                return;
+            }
+
+            if (!employees[inputName]) {
+                // If a new employee, create a profile with initial values and assign tasks
+                employees[inputName] = {
+                    id: inputId,
+                    company_name: inputCompanyName,
+                    points: 0,
+                    tasks_completed: 0,
+                    hasSpun: false, // New flag for spin limit
+                    tasks: JSON.parse(JSON.stringify(taskPool)) // Deep copy of tasks
+                };
+                showAlert(`A new profile has been created for ${inputName} (ID: ${inputId}) at ${inputCompanyName}!`);
+            } else {
+                showAlert(`Welcome back, ${inputName}!`);
+            }
+
+            currentEmployeeName = inputName;
+            employeeProfileName.textContent = `Profile for ${currentEmployeeName} (ID: ${employees[currentEmployeeName].id}) at ${employees[currentEmployeeName].company_name}`;
+            
+            // Check spin status and disable the button if the user has already spun
+            if (employees[currentEmployeeName].hasSpun) {
+                spinWheelBtn.disabled = true;
+                spinWheelBtn.textContent = 'Spun for Today!';
+                spinWheelBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                spinWheelBtn.classList.add('bg-slate-400', 'cursor-not-allowed');
+            } else {
+                spinWheelBtn.disabled = false;
+                spinWheelBtn.textContent = 'Spin!';
+                spinWheelBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                spinWheelBtn.classList.remove('bg-slate-400', 'cursor-not-allowed');
+            }
+            
+            renderTasks();
+            renderUserPoints();
+            renderLeaderboard();
+        }
+        
+        // --- Event Listeners and Initial Load ---
+        loadProfileBtn.addEventListener('click', loadProfile);
+        employeeNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loadProfile();
+            }
+        });
+        spinWheelBtn.addEventListener('click', spinWheel);
+        getQuoteBtn.addEventListener('click', sendMotivationalQuote);
+
+        // Initial rendering
+        drawWheel();
+        renderLeaderboard();
+    });
+    </script>
+    <script>
+        // This script initializes the Lucide icons after the DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
+
